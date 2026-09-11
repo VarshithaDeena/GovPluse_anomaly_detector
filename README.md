@@ -1,8 +1,8 @@
 # GovPulse — Real-Time Portal Anomaly Detection
 
-> **Live Deployment:** [https://gov-pluse-anomaly-detector.vercel.app](https://gov-pluse-anomaly-detector.vercel.app)
+> 🌐 **Live App:** [https://gov-pluse-anomaly-detector.vercel.app/](https://gov-pluse-anomaly-detector.vercel.app/)
 
-GovPulse is an intelligent, real-time traffic anomaly detection and incident triage dashboard designed for government portals and mission-critical public web infrastructure. **The app consumes streaming telemetry from the Numenta Anomaly Benchmark (NAB) dataset and processes it through a serverless AI pipeline**, pairing rolling statistical analysis with automated Google Gemini AI classification to identify, prioritize, and remediate anomalous traffic patterns in real time.
+GovPulse — Real-time government portal traffic monitoring using AWS CloudWatch telemetry and automated Gemini AI triage. The app consumes streaming telemetry from the Numenta Anomaly Benchmark (NAB) dataset and processes it through a serverless AI pipeline to detect, classify, and mitigate traffic surges before public infrastructure crashes.
 
 ---
 
