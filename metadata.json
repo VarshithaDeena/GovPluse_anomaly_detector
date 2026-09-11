@@ -1,0 +1,6 @@
+{
+  "name": "GovPulse",
+  "description": "Real-time traffic anomaly detection dashboard for government portals with automated Gemini-powered threat classification and alert triage.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
