@@ -2,7 +2,30 @@
 
 > **Live Deployment:** [https://gov-pluse-anomaly-detector.vercel.app](https://gov-pluse-anomaly-detector.vercel.app)
 
-GovPulse is an intelligent, real-time traffic anomaly detection and incident triage dashboard designed for government portals and mission-critical public web infrastructure. It pairs rolling statistical analysis with automated Google Gemini AI classification to identify, prioritize, and remediate anomalous traffic patterns in real time.
+GovPulse is an intelligent, real-time traffic anomaly detection and incident triage dashboard designed for government portals and mission-critical public web infrastructure. **The app consumes streaming telemetry from the Numenta Anomaly Benchmark (NAB) dataset and processes it through a serverless AI pipeline**, pairing rolling statistical analysis with automated Google Gemini AI classification to identify, prioritize, and remediate anomalous traffic patterns in real time.
+
+---
+
+## 💡 Real-World Mission: Tackling Public Sector Server Crashes
+
+### The Problem: Why Government Websites Keep Crashing
+Public sector portals worldwide (tax filing, entrance examination results, citizen benefit disbursements, and appointment bookings) repeatedly crash during peak traffic spikes. Most government websites **do not use dynamic cloud autoscaling** due to:
+- **Legacy Infrastructure & Fixed Capacity:** Many departments run on fixed on-premise hardware, legacy bare-metal server pools, or state datacenters with capped virtual machine allocations.
+- **Budget & Procurement Constraints:** Cloud autoscaling carries unpredictable variable costs that clash with strict annual public expenditure budgets.
+- **Cascading Failures:** When citizen volume surges 5x–10x at deadline hours, connection pools saturate and servers enter a cascade collapse (HTTP 502 Bad Gateway / 504 Gateway Timeout), taking the portal completely offline for hours.
+
+### How GovPulse Solves This in Real-Time
+GovPulse was designed to prevent catastrophic portal downtime **even when infrastructure lacks automatic horizontal scaling**:
+
+1. **Passive Edge Telemetry Tap (Non-Intrusive):**
+   - Sits as a lightweight listener at the edge (Cloudflare Worker, AWS ELB/ALB CloudWatch stream, NGINX reverse-proxy, or Envoy log tap). It requires **zero changes** to legacy backend application code.
+2. **Pre-Crash Early Warning (5–15 Minutes Before Failure):**
+   - By calculating rolling Z-score deviations ($\ge 2.5\sigma$) in 5-minute sampling windows, GovPulse flags abnormal traffic spikes *before* CPU and memory saturation trigger complete server freeze.
+3. **AI-Driven Automated Congestion Control & Virtual Queueing:**
+   - When an authentic traffic surge is verified by Gemini AI, GovPulse can immediately trigger:
+     - **Automated Virtual Waiting Rooms:** Queuing excess users at the edge CDN (e.g., CloudFront/Cloudflare Waiting Room) to limit incoming concurrency to the server's exact maximum stable capacity.
+     - **Graceful Feature Degradation:** Temporarily routing non-essential background jobs, heavy asset downloads, or report generation to off-peak queues.
+     - **Selective Emergency Burst Scaling:** Triggering on-demand container/VM burst pools only during verified genuine surges, keeping public cloud expenditure tightly bounded.
 
 ---
 
@@ -15,7 +38,7 @@ Access the live application at:
 
 ## 🏗️ Architecture Overview
 
-GovPulse is built with a high-performance modern web stack featuring decoupled client-side visualization and serverless backend triage:
+The application consumes streaming telemetry from the **Numenta Anomaly Benchmark (NAB)** dataset and processes it through a **serverless AI pipeline** designed for sub-second incident triage:
 
 ```
 ┌────────────────────────────────────────────────────────┐

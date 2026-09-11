@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { StreamDataPoint } from '../types.ts';
-import { Activity, AlertTriangle, Crosshair } from 'lucide-react';
+import { formatTimeHHMMSS } from '../utils/formatters.ts';
 
 interface LiveChartProps {
   windowPoints: StreamDataPoint[];
@@ -20,13 +20,11 @@ export const LiveChart: React.FC<LiveChartProps> = ({
   // Layout parameters for SVG chart
   const width = 800;
   const height = 320;
-  const padding = { top: 28, right: 35, bottom: 44, left: 60 };
+  const padding = { top: 32, right: 35, bottom: 48, left: 68 };
   const plotWidth = width - padding.left - padding.right;
   const plotHeight = height - padding.top - padding.bottom;
 
   // Derive min and max for scaling
-  // Ensure we have a reasonable minimum range so normal ~40-45ms looks natural,
-  // and when a 99ms spike occurs, it scales gracefully.
   const values = windowPoints.map((p) => p.value);
   const rawMin = values.length > 0 ? Math.min(...values) : 30;
   const rawMax = values.length > 0 ? Math.max(...values) : 60;
@@ -89,7 +87,6 @@ export const LiveChart: React.FC<LiveChartProps> = ({
     const mouseX = e.clientX - rect.left;
     const svgX = (mouseX / rect.width) * width;
 
-    // Find closest data point
     if (svgX < padding.left || svgX > width - padding.right) {
       setHoverPoint(null);
       setHoverCoords(null);
@@ -119,8 +116,11 @@ export const LiveChart: React.FC<LiveChartProps> = ({
   const anomalyPoints = windowPoints.filter((p) => p.isAnomaly);
 
   return (
-    <div id="live-chart-container" className="relative w-full rounded-xl bg-slate-900/90 border border-slate-800 p-4 shadow-2xl backdrop-blur-md">
-      {/* Chart Header */}
+    <div
+      id="live-chart-container"
+      className="relative w-full rounded-xl bg-slate-900/90 border border-slate-800 p-4 shadow-2xl backdrop-blur-md"
+    >
+      {/* Chart Header & Live Telemetry Legend */}
       <div className="flex flex-wrap items-center justify-between gap-3 mb-3 border-b border-slate-800/80 pb-3">
         <div>
           <div className="flex items-center gap-2">
@@ -128,40 +128,40 @@ export const LiveChart: React.FC<LiveChartProps> = ({
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-cyan-500"></span>
             </span>
-            <h2 className="text-sm font-semibold tracking-wider text-slate-100 uppercase">
-              Live ELB Request Count Stream (Last 60 Points)
+            <h2 className="text-sm font-bold tracking-wider text-slate-100 uppercase font-mono">
+              Live ELB Traffic Stream (Last 60 Points)
             </h2>
-            <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-cyan-950/70 border border-cyan-800/60 text-cyan-300">
+            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-cyan-950/90 border border-cyan-700 text-cyan-300">
               AWS CloudWatch
             </span>
           </div>
           <p className="text-[11px] text-slate-400 mt-1">
-            <span className="text-amber-400/90 font-medium">Live feed:</span> real AWS CloudWatch ELB request count data (NAB benchmark), replayed in real time
+            <span className="text-amber-400 font-semibold">Live stream:</span> Numenta Anomaly Benchmark authentic AWS ELB request series (sampled every 5m)
           </p>
         </div>
 
-        {/* Legend */}
-        <div className="flex items-center gap-4 text-xs font-mono">
+        {/* Legend with Explicit Units */}
+        <div className="flex items-center flex-wrap gap-3 text-xs font-mono">
           <div className="flex items-center gap-1.5">
-            <span className="w-3 h-0.5 bg-cyan-400 inline-block"></span>
-            <span className="text-slate-300">Requests (req/interval)</span>
+            <span className="w-3 h-1 bg-cyan-400 rounded-sm inline-block shadow-[0_0_8px_rgba(34,211,238,0.5)]"></span>
+            <span className="text-slate-200 font-bold">Requests (req/min)</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="w-3 h-0.5 bg-blue-500/80 border-b border-dashed border-blue-400 inline-block"></span>
-            <span className="text-slate-400">Rolling Mean (30pt)</span>
+            <span className="w-3 h-0.5 bg-blue-400 border-b border-dashed border-blue-400 inline-block"></span>
+            <span className="text-slate-400">30pt Mean (req/min)</span>
           </div>
           <div className="flex items-center gap-1.5">
             <span className="w-3 h-0.5 bg-rose-500 inline-block"></span>
-            <span className="text-rose-300">Threshold ({thresholdZ}σ)</span>
+            <span className="text-rose-300 font-bold">Threshold (+{thresholdZ.toFixed(1)}σ)</span>
           </div>
           <div className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-rose-500 inline-block animate-pulse"></span>
-            <span className="text-rose-400">Anomaly Point</span>
+            <span className="text-rose-400 font-semibold">Spike Anomaly</span>
           </div>
         </div>
       </div>
 
-      {/* SVG Chart */}
+      {/* SVG Chart Stage */}
       <div className="relative w-full aspect-[25/10] min-h-[260px] select-none">
         <svg
           ref={svgRef}
@@ -173,19 +173,13 @@ export const LiveChart: React.FC<LiveChartProps> = ({
           <defs>
             {/* Gradient for area under request curve */}
             <linearGradient id="requestsGlow" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#06b6d4" stopOpacity="0.3" />
-              <stop offset="60%" stopColor="#06b6d4" stopOpacity="0.08" />
+              <stop offset="0%" stopColor="#06b6d4" stopOpacity="0.32" />
+              <stop offset="65%" stopColor="#06b6d4" stopOpacity="0.06" />
               <stop offset="100%" stopColor="#06b6d4" stopOpacity="0.0" />
-            </linearGradient>
-
-            {/* Gradient for threshold highlight band */}
-            <linearGradient id="anomalyZone" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#f43f5e" stopOpacity="0.12" />
-              <stop offset="100%" stopColor="#f43f5e" stopOpacity="0.0" />
             </linearGradient>
           </defs>
 
-          {/* Grid lines & Y Axis */}
+          {/* Grid lines & Y Axis with explicit unit notation */}
           {yTicks.map((val) => {
             const y = getY(val);
             return (
@@ -201,8 +195,8 @@ export const LiveChart: React.FC<LiveChartProps> = ({
                   strokeOpacity="0.6"
                 />
                 <text
-                  x={padding.left - 10}
-                  y={y + 4}
+                  x={padding.left - 8}
+                  y={y + 3.5}
                   textAnchor="end"
                   fill="#94a3b8"
                   fontSize="10"
@@ -213,6 +207,19 @@ export const LiveChart: React.FC<LiveChartProps> = ({
               </g>
             );
           })}
+
+          {/* Y Axis Unit Label */}
+          <text
+            x={padding.left - 8}
+            y={padding.top - 12}
+            textAnchor="end"
+            fill="#64748b"
+            fontSize="9"
+            fontFamily="monospace"
+            fontWeight="bold"
+          >
+            req/min
+          </text>
 
           {/* X Axis Base Line */}
           <line
@@ -227,15 +234,15 @@ export const LiveChart: React.FC<LiveChartProps> = ({
           {/* Area Fill */}
           {areaPath && <path d={areaPath} fill="url(#requestsGlow)" />}
 
-          {/* Rolling Mean Line (Dashed Slate/Blue) */}
+          {/* Rolling Mean Line (Dashed Blue) */}
           {meanPath && (
             <path
               d={meanPath}
               fill="none"
               stroke="#60a5fa"
-              strokeWidth="1.4"
+              strokeWidth="1.5"
               strokeDasharray="3 3"
-              strokeOpacity="0.75"
+              strokeOpacity="0.8"
             />
           )}
 
@@ -251,7 +258,7 @@ export const LiveChart: React.FC<LiveChartProps> = ({
             />
           )}
 
-          {/* Primary Latency Line */}
+          {/* Primary Traffic Line */}
           {pointsPath && (
             <path
               d={pointsPath}
@@ -272,7 +279,7 @@ export const LiveChart: React.FC<LiveChartProps> = ({
 
             return (
               <g key={`anomaly-${pt.index}-${idx}`}>
-                <circle cx={x} cy={y} r="8" fill="#f43f5e" fillOpacity="0.3" className="animate-ping" />
+                <circle cx={x} cy={y} r="9" fill="#f43f5e" fillOpacity="0.35" className="animate-ping" />
                 <circle cx={x} cy={y} r="5" fill="#f43f5e" stroke="#fff" strokeWidth="1.5" />
               </g>
             );
@@ -292,10 +299,10 @@ export const LiveChart: React.FC<LiveChartProps> = ({
               <circle
                 cx={getX(windowPoints.length - 1)}
                 cy={getY(windowPoints[windowPoints.length - 1].value)}
-                r="9"
+                r="10"
                 fill="none"
                 stroke="#06b6d4"
-                strokeWidth="1"
+                strokeWidth="1.5"
                 opacity="0.8"
                 className="animate-pulse"
               />
@@ -305,7 +312,6 @@ export const LiveChart: React.FC<LiveChartProps> = ({
           {/* Hover Crosshair & Indicator */}
           {hoverPoint && hoverCoords && (
             <g>
-              {/* Vertical Crosshair Line */}
               <line
                 x1={hoverCoords.x}
                 y1={padding.top}
@@ -316,7 +322,6 @@ export const LiveChart: React.FC<LiveChartProps> = ({
                 strokeDasharray="2 2"
                 opacity="0.8"
               />
-              {/* Target Dot */}
               <circle
                 cx={hoverCoords.x}
                 cy={hoverCoords.y}
@@ -328,19 +333,17 @@ export const LiveChart: React.FC<LiveChartProps> = ({
             </g>
           )}
 
-          {/* X Axis Timestamps (Every ~15 points) */}
+          {/* X Axis Timestamps formatted as HH:MM:SS */}
           {windowPoints.map((p, i) => {
-            if (i % 15 === 0 || i === windowPoints.length - 1) {
+            if (i % 12 === 0 || i === windowPoints.length - 1) {
               const x = getX(i);
-              // Extract time HH:mm:ss from timestamp
-              const timeParts = p.timestamp.split(' ');
-              const timeLabel = timeParts[1] ? timeParts[1].substring(0, 5) : p.timestamp;
+              const timeLabel = formatTimeHHMMSS(p.timestamp);
 
               return (
                 <text
                   key={`time-${i}`}
                   x={x}
-                  y={padding.top + plotHeight + 20}
+                  y={padding.top + plotHeight + 22}
                   textAnchor={i === 0 ? 'start' : i === windowPoints.length - 1 ? 'end' : 'middle'}
                   fill="#94a3b8"
                   fontSize="10"
@@ -354,7 +357,7 @@ export const LiveChart: React.FC<LiveChartProps> = ({
           })}
         </svg>
 
-        {/* Hover Tooltip Overlay */}
+        {/* Hover Tooltip Overlay with Explicit Units */}
         {hoverPoint && hoverCoords && (
           <div
             className="absolute pointer-events-none z-20 transform -translate-x-1/2 -translate-y-full mb-3"
@@ -363,31 +366,31 @@ export const LiveChart: React.FC<LiveChartProps> = ({
               top: `${(hoverCoords.y / height) * 100}%`,
             }}
           >
-            <div className="bg-slate-950/95 border border-slate-700/90 rounded-lg p-2.5 shadow-2xl text-xs font-mono backdrop-blur-md min-w-[170px]">
+            <div className="bg-slate-950/95 border border-slate-700 rounded-lg p-2.5 shadow-2xl text-xs font-mono backdrop-blur-md min-w-[190px]">
               <div className="text-[10px] text-slate-400 border-b border-slate-800 pb-1 mb-1.5 flex justify-between items-center">
-                <span>{hoverPoint.timestamp}</span>
+                <span>Time: {formatTimeHHMMSS(hoverPoint.timestamp)}</span>
                 {hoverPoint.isAnomaly && (
-                  <span className="px-1 py-0.2 rounded bg-rose-900/80 text-rose-300 font-bold text-[9px]">
+                  <span className="px-1.5 py-0.2 rounded bg-rose-600 text-white font-black text-[9px] uppercase tracking-wider">
                     ANOMALY
                   </span>
                 )}
               </div>
               <div className="flex justify-between items-center py-0.5">
-                <span className="text-slate-400">Requests:</span>
-                <span className="font-bold text-cyan-300">{hoverPoint.value.toFixed(1)} req/interval</span>
+                <span className="text-slate-400">Traffic:</span>
+                <span className="font-extrabold text-cyan-300">{hoverPoint.value.toFixed(1)} req/min</span>
               </div>
               <div className="flex justify-between items-center py-0.5">
                 <span className="text-slate-400">Rolling Mean:</span>
-                <span className="text-slate-200">{hoverPoint.mean.toFixed(1)} req/interval</span>
+                <span className="text-slate-200">{hoverPoint.mean.toFixed(1)} req/min</span>
               </div>
               <div className="flex justify-between items-center py-0.5">
                 <span className="text-slate-400">Std Dev (σ):</span>
-                <span className="text-slate-200">{hoverPoint.std.toFixed(2)}</span>
+                <span className="text-slate-200">{hoverPoint.std.toFixed(2)}σ</span>
               </div>
               <div className="flex justify-between items-center py-0.5 pt-1 border-t border-slate-800/80 mt-1">
-                <span className="text-slate-400 font-semibold">Z-Score:</span>
+                <span className="text-slate-400 font-bold">Z-Score:</span>
                 <span
-                  className={`font-bold ${
+                  className={`font-black ${
                     hoverPoint.isAnomaly ? 'text-rose-400' : 'text-emerald-400'
                   }`}
                 >
@@ -400,19 +403,19 @@ export const LiveChart: React.FC<LiveChartProps> = ({
         )}
       </div>
 
-      {/* Footer Sub-Bar: Telemetry Status */}
+      {/* Footer Sub-Bar: Telemetry Status with explicit units */}
       <div className="mt-2 flex flex-wrap items-center justify-between text-[11px] text-slate-400 border-t border-slate-800/70 pt-2 font-mono">
         <div className="flex items-center gap-2">
-          <span className="text-slate-500">Anomaly Rule:</span>
-          <span className="text-slate-300">Z-Score &gt; {thresholdZ.toFixed(1)}σ</span>
+          <span className="text-slate-500">Threshold:</span>
+          <span className="text-rose-300 font-bold">Z-Score &gt; +{thresholdZ.toFixed(1)}σ</span>
           <span className="text-slate-600">|</span>
           <span className="text-slate-500">Sliding Window:</span>
-          <span className="text-slate-300">30 points (Mean & Std Dev)</span>
+          <span className="text-slate-300">30 samples (Mean & Std Dev)</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-slate-500">Current Window Range:</span>
-          <span className="text-cyan-400">
-            {values.length > 0 ? `${Math.min(...values).toFixed(0)} - ${Math.max(...values).toFixed(0)} req/interval` : '--'}
+          <span className="text-slate-500">Window Min/Max:</span>
+          <span className="text-cyan-300 font-semibold">
+            {values.length > 0 ? `${Math.min(...values).toFixed(0)} - ${Math.max(...values).toFixed(0)} req/min` : '-- req/min'}
           </span>
         </div>
       </div>

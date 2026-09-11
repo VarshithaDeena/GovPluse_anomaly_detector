@@ -22,6 +22,9 @@ import {
   FileText,
   CheckCircle2,
   ExternalLink,
+  Info,
+  X,
+  Flame,
 } from 'lucide-react';
 
 const CSV_PRIMARY_URL =
@@ -29,6 +32,9 @@ const CSV_PRIMARY_URL =
 const CSV_LOCAL_URL = '/api/dataset';
 
 export default function App() {
+  // Onboarding banner state
+  const [showBanner, setShowBanner] = useState<boolean>(true);
+
   // Dataset state
   const [dataset, setDataset] = useState<RawDataPoint[]>([]);
   const [isLoadingDataset, setIsLoadingDataset] = useState<boolean>(true);
@@ -385,7 +391,35 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#070b14] text-slate-100 font-sans flex flex-col selection:bg-cyan-500/30 selection:text-cyan-200">
+    <div className="min-h-screen bg-[#070b14] text-slate-100 font-sans flex flex-col selection:bg-cyan-500/30 selection:text-cyan-200 overflow-x-hidden">
+      {/* 1. Header & Onboarding Banner */}
+      {showBanner && (
+        <div
+          id="onboarding-banner"
+          className="bg-gradient-to-r from-blue-950 via-slate-900 to-cyan-950 border-b border-cyan-700/60 px-4 py-2.5 text-xs text-slate-200 shadow-lg relative z-40 transition-all duration-300"
+        >
+          <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <div className="p-1 rounded bg-cyan-900/80 border border-cyan-600 text-cyan-300 shrink-0">
+                <Info className="w-3.5 h-3.5" />
+              </div>
+              <p className="text-[11px] sm:text-xs text-slate-200 font-medium leading-normal">
+                <span className="text-cyan-300 font-bold">Public Sector Mission:</span> GovPulse monitors live website traffic using authentic AWS CloudWatch telemetry from the Numenta Anomaly Benchmark — created to tackle recurring server crashes on government portals that operate with fixed-capacity servers and lack cloud autoscaling.
+              </p>
+            </div>
+            <button
+              id="dismiss-banner-btn"
+              onClick={() => setShowBanner(false)}
+              className="flex items-center gap-1 text-[11px] font-mono text-slate-400 hover:text-slate-100 px-2 py-1 rounded bg-slate-800/80 hover:bg-slate-700 border border-slate-700/70 transition shrink-0"
+              title="Dismiss onboarding banner"
+            >
+              <X className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Dismiss</span>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Top Navigation / Portal Header */}
       <header className="border-b border-slate-800/90 bg-[#0c1222]/90 backdrop-blur-md sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
@@ -475,9 +509,9 @@ export default function App() {
         )}
 
         {!isLoadingDataset && dataset.length > 0 && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start w-full">
             {/* Left 8 Columns: Live Streaming Chart & Playback Engine */}
-            <div className="lg:col-span-8 flex flex-col gap-4">
+            <div className="lg:col-span-8 min-w-0 flex flex-col gap-4 w-full">
               {/* Primary Live-updating SVG Line Chart */}
               <LiveChart
                 windowPoints={windowPoints}
@@ -504,33 +538,52 @@ export default function App() {
 
               {/* Technical Architecture & Benchmark Context */}
               <div className="bg-slate-900/60 border border-slate-800/80 rounded-xl p-4 text-xs font-mono text-slate-300">
-                <div className="flex items-center gap-2 text-slate-100 font-semibold mb-2 text-xs">
-                  <Terminal className="w-4 h-4 text-cyan-400" />
-                  <span>Detection Architecture & Real Data Provenance</span>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-[11px] text-slate-400">
-                  <div className="bg-slate-950/70 p-3 rounded-lg border border-slate-800">
-                    <span className="text-cyan-300 font-bold block mb-1">
-                      1. Real-World AWS CloudWatch Dataset
-                    </span>
-                    <p className="leading-relaxed">
-                      Metrics originate from the peer-reviewed Numenta Anomaly Benchmark (NAB) realAWSCloudwatch repository (elb_request_count_8c0756.csv). Contains 4,032 real 5-minute AWS ELB request count recordings, capturing an authentic traffic surge where traffic rises from a baseline of ~70 requests/interval spiking to 380+, sometimes reaching 650+.
-                    </p>
+                <div className="flex items-center justify-between gap-2 text-slate-100 font-semibold mb-2.5 text-xs">
+                  <div className="flex items-center gap-2">
+                    <Terminal className="w-4 h-4 text-cyan-400" />
+                    <span>Detection Architecture & Real-World Public Sector Deployment</span>
                   </div>
-                  <div className="bg-slate-950/70 p-3 rounded-lg border border-slate-800">
-                    <span className="text-cyan-300 font-bold block mb-1">
-                      2. Real-Time Z-Score + Gemini 3.6 Flash
-                    </span>
-                    <p className="leading-relaxed">
-                      A sliding 30-point window computes rolling mean (μ) and standard deviation (σ). Exceeding the threshold (Z &gt; {thresholdZ.toFixed(1)}σ) triggers structured Gemini triage classifying failure modes and recommending immediate mitigation.
-                    </p>
+                  <span className="text-[10px] font-mono text-amber-300 bg-amber-950/60 border border-amber-800/80 px-2 py-0.5 rounded">
+                    Fixes Government Portal Outages
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-[11px] text-slate-400">
+                  <div className="bg-slate-950/70 p-3 rounded-lg border border-slate-800 flex flex-col justify-between">
+                    <div>
+                      <span className="text-cyan-300 font-bold block mb-1">
+                        1. Authentic NAB AWS Telemetry
+                      </span>
+                      <p className="leading-relaxed">
+                        Metrics originate from the Numenta Anomaly Benchmark (NAB) realAWSCloudwatch repository (<code className="text-slate-300">elb_request_count_8c0756.csv</code>). Contains 4,032 real 5-minute AWS ELB request recordings capturing an authentic traffic spike from ~70 req/min baseline jumping to 380+ req/min.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="bg-slate-950/70 p-3 rounded-lg border border-slate-800 flex flex-col justify-between">
+                    <div>
+                      <span className="text-cyan-300 font-bold block mb-1">
+                        2. Streaming Z-Score + Gemini Triage
+                      </span>
+                      <p className="leading-relaxed">
+                        A sliding 30-sample window computes rolling mean (μ) and standard deviation (σ). Deviations above threshold (Z &gt; +{thresholdZ.toFixed(1)}σ) trigger automated Google Gemini triage, classifying the incident into Genuine Surge, Bot Attack, or System Fault with tactical remediation.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="bg-slate-950/70 p-3 rounded-lg border border-amber-900/60 flex flex-col justify-between">
+                    <div>
+                      <span className="text-amber-300 font-bold block mb-1">
+                        3. Real-Time Fix: No Autoscaling Needed
+                      </span>
+                      <p className="leading-relaxed">
+                        Government websites (tax, exam results, benefits) run on fixed on-prem capacity and cannot autoscale. In real-time production, GovPulse sits as a passive edge tap (Cloudflare/NGINX/AWS ELB) giving Ops 5–15 minutes advance warning and activating edge virtual waiting rooms to prevent server collapse.
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Right 4 Columns: Live Incident Alert Feed */}
-            <div className="lg:col-span-4 h-full">
+            <div className="lg:col-span-4 min-w-0 h-full w-full">
               <AlertFeed
                 alerts={alerts}
                 isAnalyzing={isAnalyzing}
